@@ -4,7 +4,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // Gradle 8.10 と相性の良いバージョンに固定
+        // Gradle 8.7 と最も相性が良いバージョン
         classpath 'com.android.tools.build:gradle:8.5.2'
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24'
     }
