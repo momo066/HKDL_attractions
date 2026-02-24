@@ -14,14 +14,15 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    # Gradle 8.10 を強制的に使用するように変更
+    # Gradle 8.7 を強制インストール
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+      uses: gradle/actions/setup-gradle@v4
       with:
-        gradle-version: 8.10
+        gradle-version: "8.7"
 
+    # gradlew を使わず、インストールした gradle を直接使ってビルド
     - name: Build with Gradle
-      run: gradle :app:assembleDebug
+      run: gradle :app:assembleDebug --no-daemon
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
