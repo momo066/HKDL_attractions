@@ -1,6 +1,7 @@
 package com.example.hkdlapp
 
 import android.os.Bundle
+import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
@@ -37,34 +38,21 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun HKDLApp() {
     val attractions = listOf(
-        // ワールド・オブ・フローズン
         Attraction(1, "フローズン・エバー・アフター", "ワールド・オブ・フローズン", "ボートでアナ雪の世界へ。朝イチ推奨！"),
         Attraction(2, "ワンダリング・オーケンズ・スライディング・スレイ", "ワールド・オブ・フローズン", "ソリ型のミニコースター。"),
         Attraction(3, "プレイハウス・イン・ザ・ウッズ", "ワールド・オブ・フローズン", "アナやエルサに会える体験型施設。"),
-        
-        // トイ・ストーリー・ランド
         Attraction(4, "RCレーサー", "トイ・ストーリー・ランド", "U字型トラックを駆け抜ける絶叫系。"),
         Attraction(5, "スリンキー・ドッグ・スピン", "トイ・ストーリー・ランド", "犬のスリンキーがぐるぐる回るライド。"),
         Attraction(6, "トイ・ソルジャー・パラシュート・ドロップ", "トイ・ストーリー・ランド", "パラシュートで急降下するスリル満点ライド。"),
-        
-        // ミスティック・ポイント
         Attraction(7, "ミスティック・マナー", "ミスティック・ポイント", "香港限定の進化版ホーンテッドマンション。"),
-        
-        // グリズリー・ガルチ
         Attraction(8, "ビッグ・グリズリー・マウンテン・ラナウェイ・マイン・カー", "グリズリー・ガルチ", "途中で逆走するスリル満点コースター。"),
-        
-        // アドベンチャーランド
         Attraction(9, "ジャングル・リバー・クルーズ", "アドベンチャーランド", "火と水を使った迫力満点のクルーズ。"),
         Attraction(10, "ターザンのツリーハウス行きいかだ", "アドベンチャーランド", "いかだに乗ってターザンの島へ。"),
         Attraction(11, "ターザンのツリーハウス", "アドベンチャーランド", "島を歩いて探検するウォークスルー型。"),
-        
-        // トゥモローランド
         Attraction(12, "アイアンマン・エクスペリエンス", "トゥモローランド", "香港限定！アイアンマンと一緒に空を飛ぶ。"),
         Attraction(13, "アントマン＆ワスプ：ナノ・バトル！", "トゥモローランド", "小さくなって戦うシューティングライド。"),
         Attraction(14, "ハイパースペース・マウンテン", "トゥモローランド", "スター・ウォーズ仕様の屋内コースター。"),
         Attraction(15, "オービトロン", "トゥモローランド", "空飛ぶ円盤を自分で操縦。夜景が綺麗。"),
-        
-        // ファンタジーランド
         Attraction(16, "プーさんの冒険", "ファンタジーランド", "ハニーポットに乗ってプーさんの世界へ。"),
         Attraction(17, "イッツ・ア・スモールワールド", "ファンタジーランド", "ディズニーキャラクターも登場する世界旅行。"),
         Attraction(18, "ミッキーのフィルハーマジック", "ファンタジーランド", "ドナルドが巻き起こす3Dシアター。"),
@@ -72,8 +60,6 @@ fun HKDLApp() {
         Attraction(20, "シンデレラカルーセル", "ファンタジーランド", "美しいメリーゴーランド。写真映え抜群。"),
         Attraction(21, "マッドハッターのティーカップ", "ファンタジーランド", "アリスの世界のコーヒーカップ。"),
         Attraction(22, "フェアリーテイル・フォレスト", "ファンタジーランド", "ミニチュアのディズニープリンセスの世界を散策。"),
-        
-        // メインストリートUSA
         Attraction(23, "香港ディズニーランド鉄道", "メインストリートUSA", "パークをのんびり一周する蒸気機関車。"),
         Attraction(24, "メインストリート・ヴィークル", "メインストリートUSA", "レトロな車でメインストリートをドライブ。"),
         Attraction(25, "アニメーション・アカデミー", "メインストリートUSA", "ディズニーキャラクターの描き方を学べる。")
@@ -115,8 +101,15 @@ fun HKDLApp() {
                 AndroidView(
                     factory = { context ->
                         WebView(context).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
                             webViewClient = WebViewClient()
-                            settings.javaScriptEnabled = true
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true // この1行がマップ表示に必須
+                            }
                             loadUrl("https://www.hongkongdisneyland.com/ja/maps/")
                         }
                     },
