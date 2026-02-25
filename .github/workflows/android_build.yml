@@ -14,13 +14,11 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    # Gradle 8.7 を強制インストール
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
       with:
-        gradle-version: "8.7"
+        gradle-version: "8.5" # 安定したバージョンを指定
 
-    # gradlew を使わず、インストールした gradle を直接使ってビルド
     - name: Build with Gradle
       run: gradle :app:assembleDebug --no-daemon
 
