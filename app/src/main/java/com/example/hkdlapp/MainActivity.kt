@@ -1,16 +1,17 @@
 package com.example.hkdlapp
 
-import android.net.Uri
+import android.annotation.SuppressLint
 import android.os.Bundle
-import android.view.ViewGroup
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Place
@@ -19,6 +20,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -29,11 +32,13 @@ class AttractionState(
     val name: String,
     val area: String,
     val waitMin: Int,
-    val rideMin: Int
+    val rideMin: Int,
+    val urlSlug: String // 公式サイトのURL末尾
 ) {
     val totalMin get() = waitMin + rideMin
     var isChecked by mutableStateOf(false)
-    var exitTime by mutableStateOf("")
+    var exitHour by mutableStateOf<Int?>(null)
+    var exitMinute by mutableStateOf<Int?>(null)
 }
 
 class MainActivity : ComponentActivity() {
@@ -49,43 +54,79 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun HKDLApp() {
-    // 全25施設の初期データ（待ち時間・乗車時間は平均的な目安）
     val initialData = listOf(
-        AttractionState(1, "フローズン・エバー・アフター", "ワールド・オブ・フローズン", 60, 5),
-        AttractionState(2, "ワンダリング・オーケンズ・スライディング・スレイ", "ワールド・オブ・フローズン", 40, 2),
-        AttractionState(3, "プレイハウス・イン・ザ・ウッズ", "ワールド・オブ・フローズン", 30, 15),
-        AttractionState(4, "RCレーサー", "トイ・ストーリー・ランド", 30, 2),
-        AttractionState(5, "スリンキー・ドッグ・スピン", "トイ・ストーリー・ランド", 20, 2),
-        AttractionState(6, "トイ・ソルジャー・パラシュート・ドロップ", "トイ・ストーリー・ランド", 30, 3),
-        AttractionState(7, "ミスティック・マナー", "ミスティック・ポイント", 15, 5),
-        AttractionState(8, "ビッグ・グリズリー・マウンテン", "グリズリー・ガルチ", 20, 3),
-        AttractionState(9, "ジャングル・リバー・クルーズ", "アドベンチャーランド", 20, 8),
-        AttractionState(10, "ターザンのツリーハウス行きいかだ", "アドベンチャーランド", 10, 5),
-        AttractionState(11, "ターザンのツリーハウス", "アドベンチャーランド", 0, 15),
-        AttractionState(12, "アイアンマン・エクスペリエンス", "トゥモローランド", 20, 5),
-        AttractionState(13, "アントマン＆ワスプ：ナノ・バトル！", "トゥモローランド", 15, 5),
-        AttractionState(14, "ハイパースペース・マウンテン", "トゥモローランド", 25, 3),
-        AttractionState(15, "オービトロン", "トゥモローランド", 20, 2),
-        AttractionState(16, "プーさんの冒険", "ファンタジーランド", 30, 4),
-        AttractionState(17, "イッツ・ア・スモールワールド", "ファンタジーランド", 10, 10),
-        AttractionState(18, "ミッキーのフィルハーマジック", "ファンタジーランド", 15, 12),
-        AttractionState(19, "空飛ぶダンボ", "ファンタジーランド", 25, 2),
-        AttractionState(20, "シンデレラカルーセル", "ファンタジーランド", 15, 2),
-        AttractionState(21, "マッドハッターのティーカップ", "ファンタジーランド", 15, 2),
-        AttractionState(22, "フェアリーテイル・フォレスト", "ファンタジーランド", 0, 15),
-        AttractionState(23, "香港ディズニーランド鉄道", "メインストリートUSA", 20, 20),
-        AttractionState(24, "メインストリート・ヴィークル", "メインストリートUSA", 10, 10),
-        AttractionState(25, "アニメーション・アカデミー", "メインストリートUSA", 20, 20)
+        AttractionState(1, "フローズン・エバー・アフター", "ワールド・オブ・フローズン", 60, 5, "frozen-ever-after"),
+        AttractionState(2, "ワンダリング・オーケンズ・スライディング・スレイ", "ワールド・オブ・フローズン", 40, 2, "wandering-oaken-sliding-sleighs"),
+        AttractionState(3, "プレイハウス・イン・ザ・ウッズ", "ワールド・オブ・フローズン", 30, 15, "playhouse-in-the-woods"),
+        AttractionState(4, "RCレーサー", "トイ・ストーリー・ランド", 30, 2, "rc-racer"),
+        AttractionState(5, "スリンキー・ドッグ・スピン", "トイ・ストーリー・ランド", 20, 2, "slinky-dog-spin"),
+        AttractionState(6, "トイ・ソルジャー・パラシュート・ドロップ", "トイ・ストーリー・ランド", 30, 3, "toy-soldier-parachute-drop"),
+        AttractionState(7, "ミスティック・マナー", "ミスティック・ポイント", 15, 5, "mystic-manor"),
+        AttractionState(8, "ビッグ・グリズリー・マウンテン", "グリズリー・ガルチ", 20, 3, "big-grizzly-mountain-runaway-mine-cars"),
+        AttractionState(9, "ジャングル・リバー・クルーズ", "アドベンチャーランド", 20, 8, "jungle-river-cruise"),
+        AttractionState(10, "ターザンのツリーハウス行きいかだ", "アドベンチャーランド", 10, 5, "rafts-to-tarzans-treehouse"),
+        AttractionState(11, "ターザンのツリーハウス", "アドベンチャーランド", 0, 15, "tarzans-treehouse"),
+        AttractionState(12, "アイアンマン・エクスペリエンス", "トゥモローランド", 20, 5, "iron-man-experience"),
+        AttractionState(13, "アントマン＆ワスプ：ナノ・バトル！", "トゥモローランド", 15, 5, "ant-man-and-the-wasp-nano-battle"),
+        AttractionState(14, "ハイパースペース・マウンテン", "トゥモローランド", 25, 3, "hyperspace-mountain"),
+        AttractionState(15, "オービトロン", "トゥモローランド", 20, 2, "orbitron"),
+        AttractionState(16, "プーさんの冒険", "ファンタジーランド", 30, 4, "many-adventures-of-winnie-the-pooh"),
+        AttractionState(17, "イッツ・ア・スモールワールド", "ファンタジーランド", 10, 10, "its-a-small-world"),
+        AttractionState(18, "ミッキーのフィルハーマジック", "ファンタジーランド", 15, 12, "mickeys-philharmagic"),
+        AttractionState(19, "空飛ぶダンボ", "ファンタジーランド", 25, 2, "dumbo-the-flying-elephant"),
+        AttractionState(20, "シンデレラカルーセル", "ファンタジーランド", 15, 2, "cinderella-carousel"),
+        AttractionState(21, "マッドハッターのティーカップ", "ファンタジーランド", 15, 2, "mad-hatter-tea-cups"),
+        AttractionState(22, "フェアリーテイル・フォレスト", "ファンタジーランド", 0, 15, "fairy-tale-forest"),
+        AttractionState(23, "香港ディズニーランド鉄道", "メインストリートUSA", 20, 20, "hong-kong-disneyland-railroad"),
+        AttractionState(24, "メインストリート・ヴィークル", "メインストリートUSA", 10, 10, "main-street-vehicles"),
+        AttractionState(25, "アニメーション・アカデミー", "メインストリートUSA", 20, 20, "animation-academy")
     )
 
     val states = remember { initialData }
     var tabIndex by remember { mutableStateOf(0) }
-    var currentMapUrl by remember { mutableStateOf("https://www.hongkongdisneyland.com/ja/maps/") }
     
-    var startTime by remember { mutableStateOf("10:00") }
-    var closeTime by remember { mutableStateOf("20:30") }
+    // 時間設定の初期値
+    var startHour by remember { mutableStateOf(10) }
+    var startMinute by remember { mutableStateOf(0) }
+    var closeHour by remember { mutableStateOf(20) }
+    var closeMinute by remember { mutableStateOf(30) }
+
+    // WebViewのインスタンスを保持し、再ロードを防ぐ
+    val context = LocalContext.current
+    var currentUrl by remember { mutableStateOf("https://www.hongkongdisneyland.com/ja/attractions/") }
+    val webView = remember {
+        WebView(context).apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            webViewClient = object : WebViewClient() {
+                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                    val url = request?.url?.toString() ?: ""
+                    // intent:// 等のエラーを防ぐため、http(s)のみ許可
+                    if (url.startsWith("http://") || url.startsWith("https://")) {
+                        return false 
+                    }
+                    return true 
+                }
+                override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
+                    super.doUpdateVisitedHistory(view, url, isReload)
+                    currentUrl = url ?: ""
+                }
+            }
+            loadUrl("https://www.hongkongdisneyland.com/ja/attractions/")
+        }
+    }
+
+    // 戻るボタンの制御（マップタブを開いている時だけWebViewを戻る）
+    BackHandler(enabled = tabIndex == 1) {
+        if (webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            tabIndex = 0
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -105,30 +146,37 @@ fun HKDLApp() {
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            if (tabIndex == 0) {
+        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+            
+            // ---------------------------
+            // ルートタブ (tabIndex == 0)
+            // ---------------------------
+            Column(modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    alpha = if (tabIndex == 0) 1f else 0f
+                    translationX = if (tabIndex == 0) 0f else 10000f
+                }
+            ) {
                 // 上部のステータス＆入力エリア
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = startTime,
-                            onValueChange = { startTime = it },
-                            label = { Text("入園時間(例10:00)") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = closeTime,
-                            onValueChange = { closeTime = it },
-                            label = { Text("閉園時間(例20:30)") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
-                        )
+                    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Text("入園時間:", modifier = Modifier.align(Alignment.CenterVertically))
+                        TimeDropdown(startHour, (9..21).toList(), { startHour = it }, "%d")
+                        Text(":", modifier = Modifier.align(Alignment.CenterVertically))
+                        TimeDropdown(startMinute, (0..55 step 5).toList(), { startMinute = it }, "%02d")
+                        
+                        Spacer(Modifier.width(8.dp))
+                        
+                        Text("閉園時間:", modifier = Modifier.align(Alignment.CenterVertically))
+                        TimeDropdown(closeHour, (9..23).toList(), { closeHour = it }, "%d")
+                        Text(":", modifier = Modifier.align(Alignment.CenterVertically))
+                        TimeDropdown(closeMinute, (0..55 step 5).toList(), { closeMinute = it }, "%02d")
                     }
                     Spacer(Modifier.height(8.dp))
                     
                     val completedCount = states.count { it.isChecked }
-                    val finishEst = calculateFinishTime(states, startTime, closeTime)
+                    val finishEst = calculatePaceAndFinish(states, startHour, startMinute, closeHour, closeMinute)
                     
                     Text("進捗: $completedCount / ${states.size} 完了", fontWeight = FontWeight.Bold)
                     Text("制覇予想: $finishEst", color = Color.Red, fontWeight = FontWeight.Bold)
@@ -157,48 +205,95 @@ fun HKDLApp() {
                                     }
                                 }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    OutlinedTextField(
-                                        value = state.exitTime,
-                                        onValueChange = { state.exitTime = it },
-                                        label = { Text("降りた時間(例10:30)") },
-                                        modifier = Modifier.weight(1f).height(56.dp),
-                                        singleLine = true
-                                    )
-                                    Spacer(Modifier.width(8.dp))
+                                    Text("降車:", modifier = Modifier.padding(end = 4.dp))
+                                    TimeDropdown(state.exitHour, (9..23).toList(), { state.exitHour = it }, "%d")
+                                    Text(" : ", modifier = Modifier.padding(horizontal = 4.dp))
+                                    TimeDropdown(state.exitMinute, (0..55 step 5).toList(), { state.exitMinute = it }, "%02d")
+                                    
+                                    Spacer(Modifier.weight(1f))
+                                    
                                     Button(onClick = {
-                                        // Googleマップで直接検索結果のピンを表示するURL
-                                        currentMapUrl = "https://www.google.com/maps/search/?api=1&query=${Uri.encode("Hong Kong Disneyland " + state.name)}"
+                                        val targetUrl = "https://www.hongkongdisneyland.com/ja/attractions/${state.urlSlug}/"
+                                        webView.loadUrl(targetUrl)
                                         tabIndex = 1
                                     }) {
-                                        Text("地図")
+                                        Text("詳細(地図)")
                                     }
                                 }
                             }
                         }
                     }
                 }
-            } else {
-                // マップ表示エリア
+            }
+
+            // ---------------------------
+            // マップタブ (tabIndex == 1)
+            // ---------------------------
+            Column(modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    // タブ切り替え時にWebViewが破棄されるのを防ぐため、透明度と位置で隠す
+                    alpha = if (tabIndex == 1) 1f else 0f
+                    translationX = if (tabIndex == 1) 0f else 10000f
+                }
+            ) {
+                // 上部URLバー（コピペ用）
+                Surface(color = Color.LightGray.copy(alpha = 0.3f), modifier = Modifier.fillMaxWidth()) {
+                    SelectionContainer {
+                        Text(
+                            text = currentUrl,
+                            modifier = Modifier.padding(12.dp),
+                            maxLines = 1,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                // WebView本体
                 AndroidView(
-                    factory = { context ->
-                        WebView(context).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                            )
-                            webViewClient = WebViewClient()
-                            settings.apply {
-                                javaScriptEnabled = true
-                                domStorageEnabled = true
-                            }
-                            loadUrl(currentMapUrl)
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                    update = { webView ->
-                        if (webView.url != currentMapUrl) {
-                            webView.loadUrl(currentMapUrl)
-                        }
+                    factory = { webView },
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 下部ショートカットボタン
+                Row(
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth().padding(4.dp)
+                ) {
+                    Button(onClick = { webView.loadUrl("https://www.hongkongdisneyland.com/ja/attractions/") }) {
+                        Text("ｱﾄﾗｸｼｮﾝ", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Button(onClick = { webView.loadUrl("https://www.hongkongdisneyland.com/ja/entertainment/#/live-entertainment/sort=alpha/") }) {
+                        Text("ライブ", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Button(onClick = { webView.loadUrl("https://www.hongkongdisneyland.com/ja/dining/#/sort=alpha/") }) {
+                        Text("ﾀﾞｲﾆﾝｸﾞ", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ドロップダウンピッカー用コンポーネント
+@Composable
+fun TimeDropdown(value: Int?, options: List<Int>, onSelect: (Int) -> Unit, format: String) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(
+            onClick = { expanded = true },
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+            modifier = Modifier.defaultMinSize(minWidth = 50.dp, minHeight = 36.dp)
+        ) {
+            Text(if (value != null) String.format(format, value) else "--")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { opt ->
+                DropdownMenuItem(
+                    text = { Text(String.format(format, opt)) },
+                    onClick = {
+                        onSelect(opt)
+                        expanded = false
                     }
                 )
             }
@@ -206,65 +301,45 @@ fun HKDLApp() {
     }
 }
 
-// 時間計算ロジック
-fun parseTime(timeStr: String): Int {
-    val parts = timeStr.replace("：", ":").split(":")
-    if (parts.size >= 2) {
-        val h = parts[0].trim().toIntOrNull() ?: 0
-        val m = parts[1].trim().toIntOrNull() ?: 0
-        return h * 60 + m
-    }
-    return 0
-}
+// 正確な到着・制覇時間の計算ロジック
+fun calculatePaceAndFinish(
+    states: List<AttractionState>,
+    startH: Int, startM: Int,
+    closeH: Int, closeM: Int
+): String {
+    val startMins = startH * 60 + startM
+    val closeMins = closeH * 60 + closeM
+    if (startMins >= closeMins) return "時間設定エラー"
 
-fun formatTime(mins: Int): String {
-    val h = (mins / 60) % 24
-    val m = mins % 60
-    return "%02d:%02d".format(h, m)
-}
+    val checked = states.filter { it.isChecked }
+    val remaining = states.filter { !it.isChecked }
 
-fun calculateFinishTime(states: List<AttractionState>, startStr: String, closeStr: String): String {
-    val startMins = parseTime(startStr)
-    val closeMins = parseTime(closeStr)
-    if (startMins == 0 || closeMins == 0 || closeMins <= startMins) return "時間形式エラー"
+    if (remaining.isEmpty()) return "制覇完了！"
 
-    val completed = states.filter { it.isChecked }
-    val remaining = states.size - completed.size
-
-    if (remaining == 0) return "制覇完了！"
-
-    val currentMins = completed.map { parseTime(it.exitTime) }.maxOrNull()?.takeIf { it > startMins } ?: startMins
-    
-    // 現在のペース（1アトラクションあたりの実消費時間）、実績がない場合は想定平均値
-    val pace = if (completed.isEmpty()) {
-        states.sumOf { it.totalMin } / states.size
-    } else {
-        (currentMins - startMins) / completed.size
-    }
-
-    val remainingTimeNeeded = pace * remaining
-    var estimatedMins = currentMins + remainingTimeNeeded
-    var day = 1
-
-    val minsLeftToday = closeMins - currentMins
-    if (remainingTimeNeeded > minsLeftToday && minsLeftToday > 0) {
-        var carryOver = remainingTimeNeeded - minsLeftToday
-        val dayLength = closeMins - startMins
-        while (carryOver > dayLength) {
-            day++
-            carryOver -= dayLength
+    // 現在時刻（入力された一番遅い降車時間、もしくは入園時間）
+    var currentMins = startMins
+    for (item in checked) {
+        if (item.exitHour != null && item.exitMinute != null) {
+            val exit = item.exitHour!! * 60 + item.exitMinute!!
+            if (exit > currentMins) {
+                currentMins = exit
+            }
         }
-        estimatedMins = startMins + carryOver
-    } else if (minsLeftToday <= 0) {
-        var carryOver = remainingTimeNeeded
-        val dayLength = closeMins - startMins
-        while (carryOver > dayLength) {
-            day++
-            carryOver -= dayLength
-        }
-        day++
-        estimatedMins = startMins + carryOver
     }
 
-    return "${day}日目 ${formatTime(estimatedMins)}"
+    var currentDay = 1
+    // 残りのアトラクションの所要時間を足していく
+    for (item in remaining) {
+        if (currentMins + item.totalMin > closeMins) {
+            // 閉園時間を超える場合は次の日の朝に繰り越し
+            currentDay++
+            currentMins = startMins + item.totalMin
+        } else {
+            currentMins += item.totalMin
+        }
+    }
+
+    val fh = (currentMins / 60) % 24
+    val fm = currentMins % 60
+    return "${currentDay}日目 %02d:%02d".format(fh, fm)
 }
