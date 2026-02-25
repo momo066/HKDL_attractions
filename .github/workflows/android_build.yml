@@ -14,12 +14,6 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    # 8.10.2 と書くことで、8.1 への誤認識を防ぎます
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        gradle-version: "8.10.2"
-
     - name: Build with Gradle
       run: gradle :app:assembleDebug --no-daemon
 
