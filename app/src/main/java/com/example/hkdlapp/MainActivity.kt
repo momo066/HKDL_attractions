@@ -38,12 +38,12 @@ fun HKDLApp() {
         Attraction(9, "ハイパースペース・マウンテン", "トゥモロー", "屋内コースター。"),
         Attraction(10, "アイアンマン / アントマン", "トゥモロー", "マーベルで締め！")
     )
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableStateOf(0) }
     Scaffold(
         bottomBar = {
             NavigationBar {
-                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { Icon(Icons.Default.List, "List") }, label = { Text("ルート") })
-                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Icon(Icons.Default.Map, "Map") }, label = { Text("マップ") })
+                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { Icon(Icons.Filled.List, "List") }, label = { Text("ルート") })
+                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Icon(Icons.Filled.Map, "Map") }, label = { Text("マップ") })
             }
         }
     ) { padding ->
