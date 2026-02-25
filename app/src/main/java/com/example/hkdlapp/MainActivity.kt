@@ -1,5 +1,8 @@
 package com.example.hkdlapp
+
 import android.os.Bundle
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -7,70 +10,118 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 
 data class Attraction(val id: Int, val name: String, val area: String, val tip: String)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { HKDLApp() }
+        setContent {
+            MaterialTheme {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    HKDLApp()
+                }
+            }
+        }
     }
 }
 
 @Composable
 fun HKDLApp() {
     val attractions = listOf(
-        Attraction(1, "フローズン・エバー・アフター", "ワールド・オブ・フローズン", "朝イチ推奨！"),
-        Attraction(2, "オーケン・スライディング・スレイ", "ワールド・オブ・フローズン", "続けて乗車。"),
-        Attraction(3, "RCレーサー", "トイ・ストーリー", "ここから反時計回りに。"),
-        Attraction(4, "ミスティック・マナー", "ミスティック・ポイント", "香港限定！"),
-        Attraction(5, "ビッグ・グリズリー・マウンテン", "グリズリー・ガルチ", "逆走コースター。"),
-        Attraction(6, "ジャングル・リバー・クルーズ", "アドベンチャー", "昼間がおすすめ。"),
-        Attraction(7, "プーさんのハニーハント", "ファンタジー", "夕方が空きます。"),
-        Attraction(8, "イッツ・スモールワールド", "ファンタジー", "待ち時間ほぼ無し。"),
-        Attraction(9, "ハイパースペース・マウンテン", "トゥモロー", "屋内コースター。"),
-        Attraction(10, "アイアンマン / アントマン", "トゥモロー", "マーベルで締め！")
+        // ワールド・オブ・フローズン
+        Attraction(1, "フローズン・エバー・アフター", "ワールド・オブ・フローズン", "ボートでアナ雪の世界へ。朝イチ推奨！"),
+        Attraction(2, "ワンダリング・オーケンズ・スライディング・スレイ", "ワールド・オブ・フローズン", "ソリ型のミニコースター。"),
+        Attraction(3, "プレイハウス・イン・ザ・ウッズ", "ワールド・オブ・フローズン", "アナやエルサに会える体験型施設。"),
+        
+        // トイ・ストーリー・ランド
+        Attraction(4, "RCレーサー", "トイ・ストーリー・ランド", "U字型トラックを駆け抜ける絶叫系。"),
+        Attraction(5, "スリンキー・ドッグ・スピン", "トイ・ストーリー・ランド", "犬のスリンキーがぐるぐる回るライド。"),
+        Attraction(6, "トイ・ソルジャー・パラシュート・ドロップ", "トイ・ストーリー・ランド", "パラシュートで急降下するスリル満点ライド。"),
+        
+        // ミスティック・ポイント
+        Attraction(7, "ミスティック・マナー", "ミスティック・ポイント", "香港限定の進化版ホーンテッドマンション。"),
+        
+        // グリズリー・ガルチ
+        Attraction(8, "ビッグ・グリズリー・マウンテン・ラナウェイ・マイン・カー", "グリズリー・ガルチ", "途中で逆走するスリル満点コースター。"),
+        
+        // アドベンチャーランド
+        Attraction(9, "ジャングル・リバー・クルーズ", "アドベンチャーランド", "火と水を使った迫力満点のクルーズ。"),
+        Attraction(10, "ターザンのツリーハウス行きいかだ", "アドベンチャーランド", "いかだに乗ってターザンの島へ。"),
+        Attraction(11, "ターザンのツリーハウス", "アドベンチャーランド", "島を歩いて探検するウォークスルー型。"),
+        
+        // トゥモローランド
+        Attraction(12, "アイアンマン・エクスペリエンス", "トゥモローランド", "香港限定！アイアンマンと一緒に空を飛ぶ。"),
+        Attraction(13, "アントマン＆ワスプ：ナノ・バトル！", "トゥモローランド", "小さくなって戦うシューティングライド。"),
+        Attraction(14, "ハイパースペース・マウンテン", "トゥモローランド", "スター・ウォーズ仕様の屋内コースター。"),
+        Attraction(15, "オービトロン", "トゥモローランド", "空飛ぶ円盤を自分で操縦。夜景が綺麗。"),
+        
+        // ファンタジーランド
+        Attraction(16, "プーさんの冒険", "ファンタジーランド", "ハニーポットに乗ってプーさんの世界へ。"),
+        Attraction(17, "イッツ・ア・スモールワールド", "ファンタジーランド", "ディズニーキャラクターも登場する世界旅行。"),
+        Attraction(18, "ミッキーのフィルハーマジック", "ファンタジーランド", "ドナルドが巻き起こす3Dシアター。"),
+        Attraction(19, "空飛ぶダンボ", "ファンタジーランド", "ダンボに乗って空を飛ぶ定番ライド。"),
+        Attraction(20, "シンデレラカルーセル", "ファンタジーランド", "美しいメリーゴーランド。写真映え抜群。"),
+        Attraction(21, "マッドハッターのティーカップ", "ファンタジーランド", "アリスの世界のコーヒーカップ。"),
+        Attraction(22, "フェアリーテイル・フォレスト", "ファンタジーランド", "ミニチュアのディズニープリンセスの世界を散策。"),
+        
+        // メインストリートUSA
+        Attraction(23, "香港ディズニーランド鉄道", "メインストリートUSA", "パークをのんびり一周する蒸気機関車。"),
+        Attraction(24, "メインストリート・ヴィークル", "メインストリートUSA", "レトロな車でメインストリートをドライブ。"),
+        Attraction(25, "アニメーション・アカデミー", "メインストリートUSA", "ディズニーキャラクターの描き方を学べる。")
     )
     
-    // 値の変更を検知するために必要な設定
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var tabIndex by remember { mutableStateOf(0) }
 
     Scaffold(
         bottomBar = {
             NavigationBar {
-                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { Icon(Icons.Default.List, "List") }, label = { Text("ルート") })
-                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Icon(Icons.Default.Map, "Map") }, label = { Text("マップ") })
+                NavigationBarItem(
+                    selected = tabIndex == 0,
+                    onClick = { tabIndex = 0 },
+                    icon = { Icon(Icons.Default.List, null) },
+                    label = { Text("ルート") }
+                )
+                NavigationBarItem(
+                    selected = tabIndex == 1,
+                    onClick = { tabIndex = 1 },
+                    icon = { Icon(Icons.Default.Place, null) },
+                    label = { Text("マップ") }
+                )
             }
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            if (selectedTab == 0) {
-                LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-                    items(attractions) { attraction ->
-                        Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text("${attraction.id}", style = MaterialTheme.typography.headlineMedium)
-                                Spacer(Modifier.width(16.dp))
-                                Column {
-                                    Text(attraction.name, style = MaterialTheme.typography.titleLarge)
-                                    Text(attraction.area, color = Color.Gray)
-                                    Text(attraction.tip, style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
-                        }
+            if (tabIndex == 0) {
+                LazyColumn {
+                    items(attractions) { item ->
+                        ListItem(
+                            headlineContent = { Text(item.name) },
+                            supportingContent = { Text("${item.area} | ${item.tip}") },
+                            leadingContent = { Text(item.id.toString(), style = MaterialTheme.typography.headlineSmall) }
+                        )
+                        Divider()
                     }
                 }
             } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("反時計回りに進んでください\n(入口 → 右奥 → 左奥)", style = MaterialTheme.typography.titleMedium)
-                }
+                AndroidView(
+                    factory = { context ->
+                        WebView(context).apply {
+                            webViewClient = WebViewClient()
+                            settings.javaScriptEnabled = true
+                            loadUrl("https://www.hongkongdisneyland.com/ja/maps/")
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
     }
