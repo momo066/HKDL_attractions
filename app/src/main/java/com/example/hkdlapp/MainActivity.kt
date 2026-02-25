@@ -38,20 +38,23 @@ fun HKDLApp() {
         Attraction(9, "ハイパースペース・マウンテン", "トゥモロー", "屋内コースター。"),
         Attraction(10, "アイアンマン / アントマン", "トゥモロー", "マーベルで締め！")
     )
-    var selectedTab by remember { mutableStateOf(0) }
+    
+    // 値の変更を検知するために必要な設定
+    var selectedTab by remember { mutableIntStateOf(0) }
+
     Scaffold(
         bottomBar = {
             NavigationBar {
-                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { Icon(Icons.Filled.List, "List") }, label = { Text("ルート") })
-                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Icon(Icons.Filled.Map, "Map") }, label = { Text("マップ") })
+                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { Icon(Icons.Default.List, "List") }, label = { Text("ルート") })
+                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Icon(Icons.Default.Map, "Map") }, label = { Text("マップ") })
             }
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             if (selectedTab == 0) {
-                LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
                     items(attractions) { attraction ->
-                        Card(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                        Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
                             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text("${attraction.id}", style = MaterialTheme.typography.headlineMedium)
                                 Spacer(Modifier.width(16.dp))
