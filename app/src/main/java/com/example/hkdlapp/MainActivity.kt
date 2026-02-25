@@ -108,9 +108,10 @@ fun HKDLApp() {
                             webViewClient = WebViewClient()
                             settings.apply {
                                 javaScriptEnabled = true
-                                domStorageEnabled = true // この1行がマップ表示に必須
+                                domStorageEnabled = true
                             }
-                            loadUrl("https://www.hongkongdisneyland.com/ja/maps/")
+                            // Googleマップの香港ディズニーランドのURLに変更
+                            loadUrl("https://www.google.com/maps/place/Hong+Kong+Disneyland/@22.312966,114.041269,16z")
                         }
                     },
                     modifier = Modifier.fillMaxSize()
